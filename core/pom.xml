@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.alibaba.datax</groupId>
-        <artifactId>datax-all</artifactId>
+        <artifactId>dataxes</artifactId>
         <version>0.0.1-SNAPSHOT</version>
     </parent>
 
