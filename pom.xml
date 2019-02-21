@@ -85,6 +85,7 @@
         <!--<module>hbase11xsqlwriter</module>-->
         <!--<module>hbase11xsqlreader</module>-->
         <!--<module>elasticsearchwriter</module>-->
+        <module>eswriter</module>
 
         <!-- common support module -->
         <!--<module>plugin-rdbms-util</module>-->
