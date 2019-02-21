@@ -38,6 +38,12 @@ public class DefaultRecord implements Record {
 	}
 
 	@Override
+	public void addColumn(int i, Column column) {
+		columns.add(i, column);
+		incrByteSize(column);
+	}
+
+	@Override
 	public Column getColumn(int i) {
 		if (i < 0 || i >= columns.size()) {
 			return null;
@@ -59,6 +65,21 @@ public class DefaultRecord implements Record {
 		decrByteSize(getColumn(i));
 		this.columns.set(i, column);
 		incrByteSize(getColumn(i));
+	}
+
+	@Override
+	public void delColumn(int i) {
+		if (i < 0) {
+			throw DataXException.asDataXException(FrameworkErrorCode.ARGUMENT_ERROR,
+					"不能删除index小于0的column");
+		}
+		if (i >= columns.size()) {
+			throw DataXException.asDataXException(FrameworkErrorCode.ARGUMENT_ERROR,
+					"不能删除index超出size的column");
+		}
+
+		decrByteSize(getColumn(i));
+		this.columns.remove(i);
 	}
 
 	@Override

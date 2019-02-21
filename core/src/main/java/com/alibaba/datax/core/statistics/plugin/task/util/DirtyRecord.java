@@ -30,6 +30,12 @@ public class DirtyRecord implements Record {
                 DirtyColumn.asDirtyColumn(column, this.columns.size()));
 	}
 
+    @Override
+    public void addColumn(int i, Column column) {
+        this.columns.add(i,
+                DirtyColumn.asDirtyColumn(column, this.columns.size()));
+    }
+
 	@Override
 	public String toString() {
 		return JSON.toJSONString(this.columns);
@@ -46,6 +52,12 @@ public class DirtyRecord implements Record {
 		throw DataXException.asDataXException(FrameworkErrorCode.RUNTIME_ERROR,
 				"该方法不支持!");
 	}
+
+    @Override
+    public void delColumn(int i) {
+        throw DataXException.asDataXException(FrameworkErrorCode.RUNTIME_ERROR,
+                "该方法不支持!");
+    }
 
 	@Override
 	public int getColumnNumber() {

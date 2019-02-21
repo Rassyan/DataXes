@@ -22,6 +22,10 @@ public class TerminateRecord implements Record {
 	}
 
 	@Override
+	public void addColumn(int i, Column column) {
+	}
+
+	@Override
 	public Column getColumn(int i) {
 		return null;
 	}
@@ -43,6 +47,11 @@ public class TerminateRecord implements Record {
 
 	@Override
 	public void setColumn(int i, Column column) {
+		return;
+	}
+
+	@Override
+	public void delColumn(int i) {
 		return;
 	}
 }
