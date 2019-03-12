@@ -4,8 +4,7 @@ import com.alibaba.datax.common.exception.DataXException;
 import com.alibaba.datax.common.util.Configuration;
 import com.alibaba.datax.core.util.container.CoreConstant;
 import com.alibaba.datax.core.util.container.JarLoader;
-import com.alibaba.datax.transformer.ComplexTransformer;
-import com.alibaba.datax.transformer.Transformer;
+import com.alibaba.datax.transformer.*;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +35,10 @@ public class TransformerRegistry {
         registTransformer(new ReplaceTransformer());
         registTransformer(new FilterTransformer());
         registTransformer(new GroovyTransformer());
+
+        registTransformer(new Wkt2GeoShapeTransformer());
+        registTransformer(new XY2GeoPointTransformer());
+        registTransformer(new JoinFieldTransformer());
     }
 
     public static void loadTransformerFromLocalStorage() {
@@ -147,15 +150,15 @@ public class TransformerRegistry {
 
     private static void checkName(String functionName, boolean isNative) {
         boolean checkResult = true;
-        if (isNative) {
-            if (!functionName.startsWith("dx_")) {
-                checkResult = false;
-            }
-        } else {
-            if (functionName.startsWith("dx_")) {
-                checkResult = false;
-            }
-        }
+//        if (isNative) {
+//            if (!functionName.startsWith("dx_")) {
+//                checkResult = false;
+//            }
+//        } else {
+//            if (functionName.startsWith("dx_")) {
+//                checkResult = false;
+//            }
+//        }
 
         if (!checkResult) {
             throw DataXException.asDataXException(TransformerErrorCode.TRANSFORMER_NAME_ERROR, " name=" + functionName + ": isNative=" + isNative);
