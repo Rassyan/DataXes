@@ -66,6 +66,7 @@ class DataXes:
 
         self.log_init()
 
+        self.job_name = self.dataxes_job_name()
         self.job_type = ""
         self.status = STATUS_RUNNING
         self.datax_jobs = []
@@ -474,6 +475,7 @@ class DataXes:
             self.record_then_suicide("修改索引副本数、刷新频率失败")
 
     def search_dataxes_last_job(self, status=None):
+        self.create_dataxes_index_if_not_exists()
         filter_ = [
             {
                 "term": {
@@ -510,7 +512,18 @@ class DataXes:
             return response.get("hits").get("hits")[0].get("_source")
 
     def save_dataxes_run_history(self, status):
+        self.create_dataxes_index_if_not_exists()
         self.status = status
+        job_history = {}
+        for key in self.__dict__.keys():
+            if key in ['status', 'job_name', 'job_type', 'datax_jobs', 'config',
+                       'job_start_time', 'job_end_time', 'start_time', 'end_time',
+                       'settings', 'put_settings', 'template', 'put_template', 'alias_actions', 'change_aliases']:
+                job_history[key] = self.__dict__[key]
+
+        self.client.index(DATAXES_INDEX, DATAXES_TYPE, job_history, self.dataxes_index_name())
+
+    def create_dataxes_index_if_not_exists(self):
         if not self.client.indices.exists(DATAXES_INDEX):
             self.client.indices.create(DATAXES_INDEX, {
                 "settings": {
@@ -519,15 +532,17 @@ class DataXes:
                         "number_of_replicas": "0",
                         "auto_expand_replicas": "0-all"
                     }
+                },
+                "mappings": {
+                    DATAXES_TYPE: {
+                        "properties": {
+                            "end_time": {
+                                "type": "date"
+                            }
+                        }
+                    }
                 }
             })
-        job_history = {}
-        for key in self.__dict__.keys():
-            if key in ['status', 'datax_jobs', 'config', 'job_start_time', 'job_end_time', 'start_time', 'end_time',
-                       'settings', 'put_settings', 'template', 'put_template', 'alias_actions', 'change_aliases']:
-                job_history[key] = self.__dict__[key]
-
-        self.client.index(DATAXES_INDEX, DATAXES_TYPE, job_history, self.dataxes_index_name())
 
     def index_alias_when_incr(self):
         index_alias = {}
