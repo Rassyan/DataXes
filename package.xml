@@ -25,13 +25,13 @@
         </fileSet>
 
         <!-- reader -->
-        <!--<fileSet>-->
-            <!--<directory>mysqlreader/target/datax/</directory>-->
-            <!--<includes>-->
-                <!--<include>**/*.*</include>-->
-            <!--</includes>-->
-            <!--<outputDirectory>datax</outputDirectory>-->
-        <!--</fileSet>-->
+        <fileSet>
+            <directory>mysqlreader/target/datax/</directory>
+            <includes>
+                <include>**/*.*</include>
+            </includes>
+            <outputDirectory>datax</outputDirectory>
+        </fileSet>
         <!--<fileSet>-->
             <!--<directory>oceanbasereader/target/datax/</directory>-->
             <!--<includes>-->
@@ -46,20 +46,20 @@
             <!--</includes>-->
             <!--<outputDirectory>datax</outputDirectory>-->
         <!--</fileSet>-->
-        <!--<fileSet>-->
-            <!--<directory>oraclereader/target/datax/</directory>-->
-            <!--<includes>-->
-                <!--<include>**/*.*</include>-->
-            <!--</includes>-->
-            <!--<outputDirectory>datax</outputDirectory>-->
-        <!--</fileSet>-->
-        <!--<fileSet>-->
-            <!--<directory>sqlserverreader/target/datax/</directory>-->
-            <!--<includes>-->
-                <!--<include>**/*.*</include>-->
-            <!--</includes>-->
-            <!--<outputDirectory>datax</outputDirectory>-->
-        <!--</fileSet>-->
+        <fileSet>
+            <directory>oraclereader/target/datax/</directory>
+            <includes>
+                <include>**/*.*</include>
+            </includes>
+            <outputDirectory>datax</outputDirectory>
+        </fileSet>
+        <fileSet>
+            <directory>sqlserverreader/target/datax/</directory>
+            <includes>
+                <include>**/*.*</include>
+            </includes>
+            <outputDirectory>datax</outputDirectory>
+        </fileSet>
         <!--<fileSet>-->
             <!--<directory>db2reader/target/datax/</directory>-->
             <!--<includes>-->
@@ -67,20 +67,20 @@
             <!--</includes>-->
             <!--<outputDirectory>datax</outputDirectory>-->
         <!--</fileSet>-->
-        <!--<fileSet>-->
-            <!--<directory>postgresqlreader/target/datax/</directory>-->
-            <!--<includes>-->
-                <!--<include>**/*.*</include>-->
-            <!--</includes>-->
-            <!--<outputDirectory>datax</outputDirectory>-->
-        <!--</fileSet>-->
-        <!--<fileSet>-->
-            <!--<directory>rdbmsreader/target/datax/</directory>-->
-            <!--<includes>-->
-                <!--<include>**/*.*</include>-->
-            <!--</includes>-->
-            <!--<outputDirectory>datax</outputDirectory>-->
-        <!--</fileSet>-->
+        <fileSet>
+            <directory>postgresqlreader/target/datax/</directory>
+            <includes>
+                <include>**/*.*</include>
+            </includes>
+            <outputDirectory>datax</outputDirectory>
+        </fileSet>
+        <fileSet>
+            <directory>rdbmsreader/target/datax/</directory>
+            <includes>
+                <include>**/*.*</include>
+            </includes>
+            <outputDirectory>datax</outputDirectory>
+        </fileSet>
 
         <!--<fileSet>-->
             <!--<directory>odpsreader/target/datax/</directory>-->
@@ -103,13 +103,13 @@
              <!--</includes>-->
              <!--<outputDirectory>datax</outputDirectory>-->
          <!--</fileSet>-->
-        <!--<fileSet>-->
-            <!--<directory>txtfilereader/target/datax/</directory>-->
-            <!--<includes>-->
-                <!--<include>**/*.*</include>-->
-            <!--</includes>-->
-            <!--<outputDirectory>datax</outputDirectory>-->
-        <!--</fileSet>-->
+        <fileSet>
+            <directory>txtfilereader/target/datax/</directory>
+            <includes>
+                <include>**/*.*</include>
+            </includes>
+            <outputDirectory>datax</outputDirectory>
+        </fileSet>
         <!--<fileSet>-->
             <!--<directory>ossreader/target/datax/</directory>-->
             <!--<includes>-->
@@ -124,13 +124,13 @@
             <!--</includes>-->
             <!--<outputDirectory>datax</outputDirectory>-->
         <!--</fileSet>-->
-        <!--<fileSet>-->
-            <!--<directory>streamreader/target/datax/</directory>-->
-            <!--<includes>-->
-                <!--<include>**/*.*</include>-->
-            <!--</includes>-->
-            <!--<outputDirectory>datax</outputDirectory>-->
-        <!--</fileSet>-->
+        <fileSet>
+            <directory>streamreader/target/datax/</directory>
+            <includes>
+                <include>**/*.*</include>
+            </includes>
+            <outputDirectory>datax</outputDirectory>
+        </fileSet>
          <!--<fileSet>-->
             <!--<directory>ftpreader/target/datax/</directory>-->
             <!--<includes>-->
