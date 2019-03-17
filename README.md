@@ -116,7 +116,7 @@ first run?  +----+---Y---->  full
       - 指定的索引模板，会附加临时别名(.{index_name}_new)，用于标记哪些索引是全量新生成的索引
       - 索引模板还会附加 refresh_interval=-1, number_of_replicas=0 的配置，用于优化索引的生成
       - 提交索引模板，datax任务启动，子任务依次执行
-      - 所有子任务执行完毕，将拥有临时别名(.{index_name}_new)的索引，去掉临时别名并赋予别名。将之前拥有别名的索引，去掉别名并赋予临时别名(.{index_name}_old)，用于日后版本回滚。同时删除上一批拥有临时别名(.{index_name}_old)的索引
+      - 所有子任务执行完毕，将拥有临时别名(.{index_name}_new)的索引，去掉临时别名并赋予别名，并且将refresh_interval、number_of_replicas恢复模板本身配置，或es默认配置。将之前拥有别名的索引，去掉别名并赋予临时别名(.{index_name}_old)，用于日后版本回滚。同时删除上一批拥有临时别名(.{index_name}_old)的索引
     - 增量作业
       - 除下列两步外，其余与全量作业相同
       - 在datax任务启动前，对目前拥有别名的索引全部赋予临时别名({$index_name}(@{$partition})@{$version})，因为本次作业会将数据写到索引({$index_name}(@{$partition})@{$version})下，采取别名方式使es不创建新索引
