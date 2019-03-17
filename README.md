@@ -69,3 +69,47 @@ ESWriter使用目前es正推广的Java Client —— RestClient实现，es 6.2�
    $ python /opt/datax/bin/jdbc_job_tool.py
    $ cd {YOUR_JOB_HOME} && python {YOUR_JOB_NAME}.py
    ```
+
+# Specification
+  
+## 同步机制
+```
+first run?  +----+---Y---->  full
+                 |
+                 |
+                 +---N---->  is force full?  +----+---Y---->  full               +---N---->  full
+                                                  |                              |
+                                                  |                              |
+                                                  +---N---->  has inrc job? +----+---Y---->  inrc
+```
+
+## 索引命名
+  * DataXes通过索引命名策略，引入两个约定的概念 ———— "版本"、"分区"
+    
+    索引命名约定规则: {$index_name}(@{$partition})@{$version}
+    - index_name: 索引名，即作业本身的名字，会作为别名指向以{$index_name}@开头的索引
+    - partition: 分区，约定的概念，可有可无，用于使用同一别名扩充索引
+    - version: 版本，yyyyMMddhhmmss格式，为作业的end_time
+    
+    示例
+    - user@beijing@20190101000000, 拥有别名user、user@beijing
+    - user@shanghai@20181201000000, 拥有别名user、user@shanghai
+    
+  * DataXes切换别名策略
+    - 全量作业
+      - 删除es集群中，有临时别名(.{index_name}_new)的索引
+      - 指定的索引模板，会附加临时别名(.{index_name}_new)，用于标记哪些索引是全量新生成的索引
+      - 索引模板还会附加 refresh_interval=-1, number_of_replicas=0 的配置，用于优化索引的生成
+      - 提交索引模板，datax任务启动，子任务依次执行
+      - 所有子任务执行完毕，将拥有临时别名(.{index_name}_new)的索引，去掉临时别名并赋予别名。将之前拥有别名的索引，去掉别名并赋予临时别名(.{index_name}_old)，用于日后版本回滚。同时删除上一批拥有临时别名(.{index_name}_old)的索引
+    - 增量作业
+      - 除下列两步外，其余与全量作业相同
+      - 在datax任务启动前，对目前拥有别名的索引全部赋予临时别名({$index_name}(@{$partition})@{$version})，因为本次作业会将数据写到索引({$index_name}(@{$partition})@{$version})下，采取别名方式使es不创建新索引
+      - 在datax任务结束后，对拥有临时别名({$index_name}(@{$partition})@{$version})的索引，删除其临时别名
+    - 版本回滚
+      - 将拥有临时别名(.{index_name}_old)的索引，去掉临时别名并赋予别名。将之前拥有别名的索引，去掉别名并赋予临时别名(.{index_name}_new)，用于日后版本前滚
+    - 版本前滚
+      - 将拥有临时别名(.{index_name}_new)的索引，去掉临时别名并赋予别名。将之前拥有别名的索引，去掉别名并赋予临时别名(.{index_name}_old)，用于日后版本回滚。同时删除上一批拥有临时别名(.{index_name}_old)的索引
+
+# Communication
+DataXes的QQ交流群220616594
