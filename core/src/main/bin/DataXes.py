@@ -6,19 +6,19 @@ Created on 2018年9月14日
 @author: Rassyan
 """
 
-import yaml
-import json
-from yaml import SafeLoader
-from datetime import datetime
 import os
-import logging
 import sys
+import copy
+import json
+import logging
 import subprocess
+from datetime import datetime
+from optparse import OptionParser, OptionGroup
 from prettytable import PrettyTable
+from elasticsearch import Elasticsearch
 
 sys.path.append("/opt/datax/bin/")
 import datax
-from elasticsearch import Elasticsearch
 
 FULL_DATA_JOBS = "full_data_jobs"
 INCR_DATA_JOBS = "incr_data_jobs"
@@ -32,25 +32,13 @@ STATUS_FAIL = "FAIL"
 STATUS_RUNNING = "RUNNING"
 
 
-def construct_yaml_str(self, node):
-    # Override the default string handling function
-    # to always return unicode objects
-    value = self.construct_scalar(node)
-    try:
-        return value.encode('utf8')
-    except UnicodeEncodeError:
-        return value
-
-
-SafeLoader.add_constructor(u'tag:yaml.org,2002:str', construct_yaml_str)
-
-
 class DataXes:
-    def __init__(self, config_path):
+    def __init__(self, config_func, jobs_func, options):
         self.print_logo()
+        self.options = self.parse_options(options)
         self.job_start_time = datetime.now().replace(microsecond=0)
-        with open(config_path) as stream:
-            self.config = yaml.safe_load(stream)
+
+        self.config = config_func(self.options.env)
 
         self.client = Elasticsearch(self.es_hosts(), sniff_on_start=True, sniff_on_connection_fail=True,
                                     sniffer_timeout=60)
@@ -71,6 +59,16 @@ class DataXes:
         self.status = STATUS_RUNNING
         self.datax_jobs = []
         self.template = """{}"""
+
+        _mode = self.options.mode.lower()
+        if _mode == "auto":
+            self.do_jobs(jobs_func(self.options.env))
+        elif _mode == "ff" or _mode == "forcefull":
+            self.do_jobs(jobs_func(self.options.env), force_full=True)
+        elif _mode == "rb" or _mode == "rollback":
+            self.rollback()
+        elif _mode == "rf" or _mode == "rollforward":
+            self.rollforward()
 
     def print_logo(self):
         print r'''==================================================='''
@@ -160,50 +158,48 @@ class DataXes:
         return self.config.get("es", {}).get("type_name") or DATAXES_TYPE
 
     def dataxes_index_template(self):
-        with open(self.config.get("es", {}).get("template_file")) as template_file:
-            template = json.load(template_file)
+        template = copy.deepcopy(self.config.get("template", {}))
 
-            # 全量写入优化策略
+        # 全量写入优化策略
 
-            def _pop_config(dict_):
-                pop_keys = []
-                for key in dict_:
-                    for s in ["refresh_interval", "number_of_replicas", "auto_expand_replicas"]:
-                        if key.endswith(s):
-                            pop_keys.append(key)
-                for key in pop_keys:
-                    dict_.pop(key)
-                return dict_
+        def _pop_config(dict_):
+            pop_keys = []
+            for key in dict_:
+                for s in ["refresh_interval", "number_of_replicas", "auto_expand_replicas"]:
+                    if key.endswith(s):
+                        pop_keys.append(key)
+            for key in pop_keys:
+                dict_.pop(key)
+            return dict_
 
-            template["settings"] = _pop_config(template.get("settings", {}))
-            new_setting = _pop_config(template.get("settings", {}).get("index", {}))
-            new_setting["refresh_interval"] = "-1"
-            new_setting["number_of_replicas"] = "0"
-            template["settings"]["index"] = new_setting
-            # 添加名称匹配规则
-            template["index_patterns"] = ["{}@*".format(self.dataxes_job_name())]
-            # 添加别名规则
-            template["aliases"] = {".{}@new".format(self.dataxes_alias_name()): {}}
-            # 添加模板套用优先级
-            template["order"] = 1 if self.dataxes_partition_name() else 0
-            return template
+        template["settings"] = _pop_config(template.get("settings", {}))
+        new_setting = _pop_config(template.get("settings", {}).get("index", {}))
+        new_setting["refresh_interval"] = "-1"
+        new_setting["number_of_replicas"] = "0"
+        template["settings"]["index"] = new_setting
+        # 添加名称匹配规则
+        template["index_patterns"] = ["{}@*".format(self.dataxes_job_name())]
+        # 添加别名规则
+        template["aliases"] = {".{}@new".format(self.dataxes_alias_name()): {}}
+        # 添加模板套用优先级
+        template["order"] = 1 if self.dataxes_partition_name() else 0
+        return template
 
     def dataxes_index_settings(self):
-        with open(self.config.get("es", {}).get("template_file")) as template_file:
-            template = json.load(template_file)
-            settings = template.get("settings", {})
-            settings_index = settings.get("index", {})
-            update_settings = {"refresh_interval": "1s"}
-            for key, value in settings.items() + settings_index.items():
-                if key.endswith("refresh_interval"):
-                    update_settings["refresh_interval"] = value
-                elif key.endswith("number_of_replicas"):
-                    update_settings["number_of_replicas"] = value
-                elif key.endswith("auto_expand_replicas"):
-                    update_settings["auto_expand_replicas"] = value
-            if len(update_settings.keys()) == 1:
-                update_settings["auto_expand_replicas"] = "0-1"
-            return {"settings": {"index": update_settings}}
+        template = self.config.get("template", {})
+        settings = template.get("settings", {})
+        settings_index = settings.get("index", {})
+        update_settings = {"refresh_interval": "1s"}
+        for key, value in settings.items() + settings_index.items():
+            if key.endswith("refresh_interval"):
+                update_settings["refresh_interval"] = value
+            elif key.endswith("number_of_replicas"):
+                update_settings["number_of_replicas"] = value
+            elif key.endswith("auto_expand_replicas"):
+                update_settings["auto_expand_replicas"] = value
+        if len(update_settings.keys()) == 1:
+            update_settings["auto_expand_replicas"] = "0-1"
+        return {"settings": {"index": update_settings}}
 
     # 以下为esWriter使用的配置
 
@@ -516,7 +512,7 @@ class DataXes:
         self.status = status
         job_history = {}
         for key in self.__dict__.keys():
-            if key in ['status', 'job_name', 'job_type', 'datax_jobs', 'config',
+            if key in ['status', 'job_name', 'job_type', 'datax_jobs', 'config', 'options',
                        'job_start_time', 'job_end_time', 'start_time', 'end_time',
                        'settings', 'put_settings', 'template', 'put_template', 'alias_actions', 'change_aliases']:
                 job_history[key] = self.__dict__[key]
@@ -666,6 +662,24 @@ class DataXes:
 
     def rollforward(self):
         self.dataxes_alias_change(new=True)
+
+    def parse_options(self, args):
+        usage = "usage: dataxes %job-name [-e <env>] [-m <mode>]"
+        option_parser = OptionParser(usage=usage)
+
+        prod_option_group = OptionGroup(option_parser, "Product Options",
+                                        "Use these options to set job runtime mode.")
+        prod_option_group.add_option("-e", "--env", metavar="<environment>", dest="env", action="store",
+                                     default="dev", help="Set environment to run with a correct config.")
+        prod_option_group.add_option("-m", "--mode", metavar="<job runtime mode>",
+                                     action="store", default="auto",
+                                     help="Set job runtime mode such as: forceFull(ff), rollBack(rb), rollForward(rf)."
+                                          "Default mode is auto.")
+        option_parser.add_option_group(prod_option_group)
+        options, args = option_parser.parse_args(args)
+        if args:
+            self.suicide_before_running("unknown args: {}".format(args))
+        return options
 
 
 class JdbcReader:

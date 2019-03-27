@@ -76,10 +76,12 @@ ESWriter使用目前es正推广的Java Client —— RestClient实现，es 6.2�
   $ dataxes                                 # 进入Jdbc job tool，进行作业一键生成
   $ dataxes {YOUR_JOB_NAME}                 # 前台进程运行同步作业
   $ dataxes -d {YOUR_JOB_NAME}              # 后台进程运行同步作业，可通过docker命令查看运行状态、日志等
-  $ dataxes {YOUR_JOB_NAME} --ff            # 前台进程强制运行全量切换方式运行作业，--ff也可写作--forcefull
-  $ dataxes -d {YOUR_JOB_NAME} --ff         # 后台进程强制运行全量切换方式运行作业，--ff也可写作--forcefull
-  $ dataxes {YOUR_JOB_NAME} --rb            # 对该作业进行版本回滚，--rb也可写作--rollback
-  $ dataxes {YOUR_JOB_NAME} --rf            # 对该作业进行版本前滚，--rf也可写作--rollforward
+  $ dataxes {YOUR_JOB_NAME} -m auto         # 默认auto方式，可不写，自动判断全量或增量同步作业
+  $ dataxes {YOUR_JOB_NAME} -m ff           # 强制运行全量切换方式运行作业，ff也可写作forcefull
+  $ dataxes {YOUR_JOB_NAME} -m rb           # 对该作业进行版本回滚，rb也可写作rollback
+  $ dataxes {YOUR_JOB_NAME} -m rf           # 对该作业进行版本前滚，rf也可写作rollforward
+  $ dataxes {YOUR_JOB_NAME} -e dev          # 运行同步作业，采用dev环境的配置
+  $ dataxes {YOUR_JOB_NAME} -e online       # 运行同步作业，采用online环境的配置
   ```
 
 ## 支持的数据源

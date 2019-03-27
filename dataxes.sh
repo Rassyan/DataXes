@@ -8,11 +8,11 @@ fi
 
 suffix=`date "+%Y%m%d%H%M%S"`
 dataxes_job_name=$1
-dataxes_args=$2
+dataxes_args=`echo "$@" | awk '{for(i=2;i<=NF;i++)printf $i" "}'`
 if [ "-d" == "$1" ]; then
     docker_args=$1
     dataxes_job_name=$2
-    dataxes_args=$3
+    dataxes_args=`echo "$@" | awk '{for(i=3;i<=NF;i++)printf $i" "}'`
 fi
 
 docker run --rm ${docker_args} \
