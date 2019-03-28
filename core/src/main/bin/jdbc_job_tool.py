@@ -133,8 +133,15 @@ if __name__ == '__main__':
                 print "field {} jdbc type {}, regard as text".format(_name, _type)
                 _type = "text"
             columns.append({"name": _name, "type": _type})
-            if _type != "text":
-                mapping["_doc"]["properties"][_name] = {"type": _type}
+            mapping["_doc"]["properties"][_name] = {
+                "type": "text",
+                "fields": {
+                    "keyword": {
+                        "type": "keyword",
+                        "ignore_above": 256
+                    }
+                }
+            } if _type == "text" else {"type": _type}
 
         curs.close()
         conn.close()
@@ -187,7 +194,7 @@ if __name__ == '__main__':
         py_file.write('    },\n')
         py_file.write('    "template": {\n')
         py_file.write('        "mappings": ')
-        py_file.write('\n        '.join(json.dumps(mapping, ensure_ascii=False, indent=4).split('\n')))
+        py_file.write('\n        '.join(json.dumps(mapping, ensure_ascii=False, sort_keys=True, indent=4).split('\n')))
         py_file.write(',\n')
         py_file.write('        "settings": {\n')
         py_file.write('            "index": {\n')
