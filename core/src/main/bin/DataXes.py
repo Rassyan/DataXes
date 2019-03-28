@@ -38,7 +38,7 @@ class DataXes:
         self.options = self.parse_options(options)
         self.job_start_time = datetime.now().replace(microsecond=0)
 
-        self.config = config_func(self.options.env)
+        self.config = config_func(self.options["env"])
 
         self.client = Elasticsearch(self.es_hosts(), sniff_on_start=True, sniff_on_connection_fail=True,
                                     sniffer_timeout=60)
@@ -60,11 +60,11 @@ class DataXes:
         self.datax_jobs = []
         self.template = """{}"""
 
-        _mode = self.options.mode.lower()
+        _mode = self.options["mode"].lower()
         if _mode == "auto":
-            self.do_jobs(jobs_func(self.options.env))
+            self.do_jobs(jobs_func(self.options["env"]))
         elif _mode == "ff" or _mode == "forcefull":
-            self.do_jobs(jobs_func(self.options.env), force_full=True)
+            self.do_jobs(jobs_func(self.options["env"]), force_full=True)
         elif _mode == "rb" or _mode == "rollback":
             self.rollback()
         elif _mode == "rf" or _mode == "rollforward":
@@ -679,7 +679,7 @@ class DataXes:
         options, args = option_parser.parse_args(args)
         if args:
             self.suicide_before_running("unknown args: {}".format(args))
-        return options
+        return options.__dict__
 
 
 class JdbcReader:
