@@ -6,9 +6,10 @@ Created on 2018年6月12日
 @author: Rassyan
 """
 
-import jaydebeapi
+import re
 import json
 import datetime
+import jaydebeapi
 from elasticsearch import Elasticsearch
 
 jdbc = {
@@ -98,6 +99,12 @@ if __name__ == '__main__':
         try:
             curs.execute(sql)
             descs = curs.description
+            if re.match(r"^\s*(select|SELECT)\s*\*\s*(from|FROM)\s*", sql):
+                sql = re.sub(r"^\s*(select|SELECT)\s*\*\s*(from|FROM)\s*", "select\n          {}\n        from "
+                             .format(",\n          ".join([desc[0].encode('utf-8') for desc in descs])), sql)
+                print("================== change sql to  ==================")
+                print(sql)
+                print("====================================================")
         except Exception, err:
             print(err)
             continue
