@@ -363,7 +363,7 @@ class DataXes:
 
             # post do
             if index_alias:
-                self._es_change_aliases([{"delete": {"index": i, "alias": a}} for i, a in index_alias.items()])
+                self._es_change_aliases([{"remove": {"index": i, "alias": a}} for i, a in index_alias.items()])
 
             self.put_index_settings(self._es_get_candidate_indices())
             if self.job_type == FULL_DATA_JOBS:
@@ -404,7 +404,7 @@ class DataXes:
                     result_log = '\n'.join((result_log, log_buff[(i + j) % buff_len].decode('utf-8')))
             return child_process.returncode, result_log
         except (KeyboardInterrupt, SystemExit):
-            datax.suicide_before_running()
+            datax.suicide()
 
     def make_jobs(self, jobs, force_full):
         """
@@ -548,8 +548,11 @@ class DataXes:
             current_indices = response.splitlines()
             for index_name in current_indices:
                 ins = index_name.split('@')
-                if 2 <= len(ins) <= 3 and ins[0] == alias:
-                    index_alias[index_name] = self.dataxes_index_name(ins[1])
+                if ins[0] == alias:
+                    if len(ins) == 2:
+                        index_alias[index_name] = self.dataxes_index_name()
+                    elif len(ins) == 3:
+                        index_alias[index_name] = self.dataxes_index_name(ins[1])
         return index_alias
 
     def _es_change_aliases(self, alias_actions):
