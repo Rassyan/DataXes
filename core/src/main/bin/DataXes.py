@@ -312,6 +312,21 @@ class DataXes:
             status_ = last_history.get("status")
             if status_ == STATUS_RUNNING:
                 # TODO 判断是否已停写
+                print "DataXes的非正常退出也可能导致的历史记录未更新。\n如果你确认上次任务已停写，可手动执行:\n{}\n以修正该历史记录".format(
+r"""
+curl -XPOST "%(es_host)s/.dataxes_run_history/_update_by_query" -H 'Content-Type: application/json' -d'
+{
+  "query": {
+    "query_string": {
+      "query": "status.keyword:FAIL AND job_name.keyword:%(job_name)s"
+    }
+  },
+  "script": {
+    "source": "ctx._source[\"status\"] = \"IGNORE\""
+  }
+}'
+""" % {"es_host": self.es_hosts()[0], "job_name": self.job_name}
+                )
                 self.suicide_before_running("上次同步任务 {} 未执行完成，退出！".format(self.dataxes_job_name()))
             elif status_ == STATUS_FAIL:
                 # TODO 判断失败进度 可否继续运行
@@ -339,40 +354,43 @@ class DataXes:
 
     def do_jobs(self, jobs, force_full=False):
         try:
-            # prepare do
             logging.info("同步任务开始执行，任务信息保存至：{}".format(self.job_dir))
             self.make_jobs(jobs, force_full)
             self.put_index_template()
             self.save_dataxes_run_history(STATUS_RUNNING)
             self._es_delete_new_candidate_indices()
-
             index_alias = self.index_alias_when_incr() if self.job_type == INCR_DATA_JOBS else {}
-            if index_alias:
-                self._es_change_aliases([{"add": {"index": i, "alias": a}} for i, a in index_alias.items()])
+            try:
+                # 赋予增量别名
+                if index_alias:
+                    self._es_change_aliases([{"add": {"index": i, "alias": a}} for i, a in index_alias.items()])
 
-            for datax_job in self.datax_jobs:
-                return_code, result_log = self.do_job(datax_job.get("name", ""))
-                if return_code != 0:
-                    datax_job["status"] = STATUS_FAIL
-                    self.record_then_suicide("同步任务执行失败，请到log目录查看对应日志！", return_code)
-                else:
-                    logging.info("子任务[{}]执行成功".format(datax_job["name"]))
-                    datax_job["result_log"] = result_log
-                    datax_job["status"] = STATUS_SUCCESS
-                    self.save_dataxes_run_history(STATUS_RUNNING)
+                for datax_job in self.datax_jobs:
+                    return_code, result_log = self.do_job(datax_job.get("name", ""))
+                    if return_code != 0:
+                        datax_job["status"] = STATUS_FAIL
+                        raise Exception("同步任务执行失败，请到log目录查看对应日志！")
+                    else:
+                        logging.info("子任务[{}]执行成功".format(datax_job["name"]))
+                        datax_job["result_log"] = result_log
+                        datax_job["status"] = STATUS_SUCCESS
+                        self.save_dataxes_run_history(STATUS_RUNNING)
 
-            # post do
-            if index_alias:
-                self._es_change_aliases([{"remove": {"index": i, "alias": a}} for i, a in index_alias.items()])
-
-            self.put_index_settings(self._es_get_candidate_indices())
-            if self.job_type == FULL_DATA_JOBS:
-                self.dataxes_alias_change()
-            self.job_end_time = datetime.now().replace(microsecond=0)
-            self.save_dataxes_run_history(STATUS_SUCCESS)
-            logging.info("同步任务执行成功！")
-        except Exception, err:
+                if self.job_type == FULL_DATA_JOBS or not self.dataxes_partition_name():
+                    self.put_index_settings(self._es_get_candidate_indices())
+                    self.dataxes_alias_change()
+                self.job_end_time = datetime.now().replace(microsecond=0)
+                self.save_dataxes_run_history(STATUS_SUCCESS)
+            except BaseException as err:
+                raise err
+            finally:
+                # 去除增量别名
+                if index_alias:
+                    self._es_change_aliases([{"remove": {"index": i, "alias": a}} for i, a in index_alias.items()])
+        except BaseException as err:
             self.record_then_suicide(err)
+        else:
+            logging.info("同步任务执行成功！")
 
     def do_job(self, job_name):
         parser = datax.getOptionParser()
@@ -441,34 +459,26 @@ class DataXes:
     def put_index_template(self):
         logging.info("================ 提交索引模板 ================")
         template = self.dataxes_index_template()
-        try:
-            self.template = """{}""".format(json.dumps(template, indent=2))
-            self.put_template = self.client.indices.put_template(self.dataxes_job_name(), template)
-            if self.put_template.get("acknowledged", False):
-                logging.info("提交索引模板成功")
-            else:
-                logging.error("提交索引模板失败")
-                self.record_then_suicide("提交索引模板失败")
-        except Exception, e:
-            logging.error(e)
-            self.record_then_suicide("提交索引模板失败")
+        self.template = """{}""".format(json.dumps(template, indent=2))
+        self.put_template = self.client.indices.put_template(self.dataxes_job_name(), template)
+        if self.put_template.get("acknowledged", False):
+            logging.info("提交索引模板成功")
+        else:
+            logging.error("提交索引模板失败")
+            raise Exception("提交索引模板失败")
 
     def put_index_settings(self, indices):
         logging.info("================ 修改索引副本数、刷新频率 ================")
         settings = self.dataxes_index_settings()
-        try:
-            if indices:
-                self.settings = """{}""".format(json.dumps(settings, indent=2))
-                self.put_settings = self.client.indices.put_settings(settings, ','.join(indices))
-                if self.put_settings.get("acknowledged", False):
-                    logging.info("修改索引副本数、刷新频率成功")
-                else:
-                    self.record_then_suicide("修改索引副本数、刷新频率失败")
+        if indices:
+            self.settings = """{}""".format(json.dumps(settings, indent=2))
+            self.put_settings = self.client.indices.put_settings(settings, ','.join(indices))
+            if self.put_settings.get("acknowledged", False):
+                logging.info("修改索引副本数、刷新频率成功")
             else:
-                logging.error("未发现新建立的索引")
-        except Exception, e:
-            logging.error(e)
-            self.record_then_suicide("修改索引副本数、刷新频率失败")
+                raise Exception("修改索引副本数、刷新频率失败")
+        else:
+            logging.warn("未发现新建立的索引")
 
     def search_dataxes_last_job(self, status=None):
         self.create_dataxes_index_if_not_exists()
