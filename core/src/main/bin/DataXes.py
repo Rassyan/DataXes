@@ -35,6 +35,7 @@ STATUS_RUNNING = "RUNNING"
 class DataXes:
     def __init__(self, config_func, jobs_func, options):
         self.print_logo()
+        self.job_name = self.dataxes_job_name()
         self.options = self.parse_options(options)
         self.job_start_time = datetime.now().replace(microsecond=0)
 
@@ -54,7 +55,6 @@ class DataXes:
 
         self.log_init()
 
-        self.job_name = self.dataxes_job_name()
         self.job_type = ""
         self.status = STATUS_RUNNING
         self.datax_jobs = []
