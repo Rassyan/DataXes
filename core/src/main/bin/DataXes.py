@@ -35,11 +35,11 @@ STATUS_RUNNING = "RUNNING"
 class DataXes:
     def __init__(self, config_func, jobs_func, options):
         self.print_logo()
-        self.job_name = self.dataxes_job_name()
         self.options = self.parse_options(options)
         self.job_start_time = datetime.now().replace(microsecond=0)
 
         self.config = config_func(self.options["env"])
+        self.job_name = self.dataxes_job_name()
 
         self.client = Elasticsearch(self.es_hosts(), sniff_on_start=True, sniff_on_connection_fail=True,
                                     sniffer_timeout=60)
