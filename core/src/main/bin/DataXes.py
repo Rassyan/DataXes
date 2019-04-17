@@ -318,7 +318,7 @@ curl -XPOST "%(es_host)s/.dataxes_run_history/_update_by_query" -H 'Content-Type
 {
   "query": {
     "query_string": {
-      "query": "status.keyword:FAIL AND job_name.keyword:%(job_name)s"
+      "query": "status.keyword:RUNNING AND job_name.keyword:%(job_name)s"
     }
   },
   "script": {
