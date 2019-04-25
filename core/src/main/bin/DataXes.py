@@ -552,17 +552,13 @@ curl -XPOST "%(es_host)s/.dataxes_run_history/_update_by_query" -H 'Content-Type
 
     def index_alias_when_incr(self):
         index_alias = {}
-        alias = self.dataxes_alias_name()
-        if alias:
-            response = self.client.cat.aliases(alias, h='i')
-            current_indices = response.splitlines()
-            for index_name in current_indices:
-                ins = index_name.split('@')
-                if ins[0] == alias:
-                    if len(ins) == 2:
-                        index_alias[index_name] = self.dataxes_index_name()
-                    elif len(ins) == 3:
-                        index_alias[index_name] = self.dataxes_index_name(ins[1])
+        current_indices = self._es_get_current_indices()
+        for index_name in current_indices:
+            ins = index_name.split('@')
+            if len(ins) == 2:
+                index_alias[index_name] = self.dataxes_index_name()
+            elif len(ins) == 3:
+                index_alias[index_name] = self.dataxes_index_name(ins[1])
         return index_alias
 
     def _es_change_aliases(self, alias_actions):
