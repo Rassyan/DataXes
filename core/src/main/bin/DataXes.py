@@ -481,7 +481,8 @@ curl -XPOST "%(es_host)s/.dataxes_run_history/_update_by_query" -H 'Content-Type
             logging.warn("未发现新建立的索引")
 
     def search_dataxes_last_job(self, status=None):
-        self.create_dataxes_index_if_not_exists()
+        if self.create_dataxes_index_if_not_exists():
+            return
         filter_ = [
             {
                 "term": {
@@ -548,7 +549,8 @@ curl -XPOST "%(es_host)s/.dataxes_run_history/_update_by_query" -H 'Content-Type
                         }
                     }
                 }
-            })
+            }, include_type_name=True)
+            return True
 
     def index_alias_when_incr(self):
         index_alias = {}
